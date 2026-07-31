@@ -30,7 +30,7 @@ func main() {
 	fatal(os.MkdirAll(filepath.Join(c.RepositoryPath, c.AssetsDir), 0755))
 	fatal(writeJSON(filepath.Join(c.RepositoryPath, c.StatusFile), s))
 	fatal(svg.Write(filepath.Join(c.RepositoryPath, c.AssetsDir), s.History.CPU, s.History.Memory, s.History.Storage))
-	fatal(readme.Render(filepath.Join(c.RepositoryPath, c.Template), filepath.Join(c.RepositoryPath, c.README), s))
+	fatal(readme.Render(c.Template, filepath.Join(c.RepositoryPath, c.README), s))
 	if *publish || c.Publish.Enabled {
 		fatal(gh.Publish(c))
 	}

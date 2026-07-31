@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"github.com/schp/homelab-stat-for-bio/internal/config"
 	"os/exec"
+	"path/filepath"
 )
 
 func Publish(c config.Config) error {
-	cmd := exec.Command("git", "add", c.README, c.StatusFile, c.AssetsDir)
+	generated := []string{c.README, c.StatusFile}
+	for _, name := range []string{"cpu.svg", "ram.svg", "storage.svg"} {
+		generated = append(generated, filepath.Join(c.AssetsDir, name))
+	}
+	cmd := exec.Command("git", append([]string{"add"}, generated...)...)
 	cmd.Dir = c.RepositoryPath
 	if err := cmd.Run(); err != nil {
 		return err

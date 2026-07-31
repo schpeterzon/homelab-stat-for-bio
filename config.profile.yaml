@@ -1,0 +1,16 @@
+# Output target for the schpeterzon GitHub profile repository.
+repository_path: ../schpeterzon
+template: templates/profile.README.md.tmpl
+readme: README.md
+status_file: status.json
+# SVGs deliberately live at the profile repository root for simple GitHub README links.
+assets_dir: .
+collectors:
+  kubernetes: true
+  docker: true
+  proxmox: false
+publish:
+  enabled: true
+  remote: origin
+  branch: main
+  message: "chore: update homelab status"

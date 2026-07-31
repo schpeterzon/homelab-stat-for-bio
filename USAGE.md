@@ -16,3 +16,17 @@ Generated files are `README.md`, `status.json`, and `assets/{cpu,ram,storage}.sv
 ## Automation
 
 Build with `go build -o homelab-agent ./cmd/agent`, then schedule `homelab-agent --config /path/to/config.yaml` from systemd or cron. The default configuration never executes Git operations. A publishing run stages only the configured README, JSON snapshot, and assets before committing and pushing the configured branch.
+
+## GitHub profile publishing
+
+`config.profile.yaml` targets the adjacent `../schpeterzon` profile repository and writes its README, `status.json`, and root-level `cpu.svg`, `ram.svg`, and `storage.svg`. Build the binary, install the supplied user units, and enable the daily timer:
+
+```bash
+go build -o homelab-agent ./cmd/agent
+mkdir -p ~/.config/systemd/user
+cp deploy/systemd/homelab-profile.{service,timer} ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now homelab-profile.timer
+```
+
+The service invokes `--publish`, so ensure the `schpeterzon` repository can push to `origin` without an interactive prompt.

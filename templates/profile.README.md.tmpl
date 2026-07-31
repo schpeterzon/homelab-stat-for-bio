@@ -1,0 +1,46 @@
+# SATYI HOMELAB
+
+Python • Kubernetes • Proxmox VE • Linux
+
+- Building production-grade infrastructure at home.
+- My homelab is where I design, deploy, and test production-inspired systems using Kubernetes, Proxmox, Linux, and Python.
+- I enjoy building open-source software that simplifies homelab management or some process at my work.
+
+## Infrastructure
+
+- ☸️ Kubernetes (k3s)
+- 🖥️ Proxmox VE
+- 🐳 Docker
+- 🐧 Linux
+- ☁️ Cloudflare
+- 🔒 WireGuard
+- 💾 Storage & NAS
+
+## Currently Working On
+
+- Standalone Homelab Dashboard
+- Kubernetes migration
+- Self-hosted monitoring platform
+- Learning Nix ecosystem
+
+## Live homelab status
+
+{{if eq .Health "Healthy"}}🟢{{else}}🟠{{end}} **{{.Health}}** · refreshed {{.Updated.Format "02 Jan 2006 15:04 UTC"}}
+
+| Host | Kernel | Uptime |
+|---|---|---:|
+| {{.System.Hostname}} | {{.System.Kernel}} | {{.System.Uptime}} seconds |
+
+| Kubernetes nodes | Pods | Docker containers |
+|:--:|:--:|:--:|
+| {{.Kubernetes.Nodes}} | {{.Kubernetes.Pods}} | {{.Docker.Containers}} |
+
+<img src="cpu.svg" alt="CPU usage" /> <img src="ram.svg" alt="Memory usage" /> <img src="storage.svg" alt="Storage usage" />
+
+| CPU | Memory | Storage |
+|---:|---:|---:|
+| {{percent .System.CPU}}% | {{percent .System.Memory}}% | {{printf "%.1f" .System.Storage.Used}} / {{printf "%.1f" .System.Storage.Total}} TB |
+
+{{if .Errors}}> Collector notices: {{range .Errors}}`{{.}}` {{end}}{{end}}
+
+_Generated daily by [homelab-stat-for-bio](https://github.com/schp/homelab-stat-for-bio)._

@@ -92,6 +92,9 @@ func (c *Config) normalize(base string) error {
 	if !filepath.IsAbs(c.RepositoryPath) {
 		c.RepositoryPath = filepath.Join(base, c.RepositoryPath)
 	}
+	if !filepath.IsAbs(c.Template) {
+		c.Template = filepath.Join(base, c.Template)
+	}
 	return nil
 }
 
