@@ -1,6 +1,6 @@
 # Homelab status
 
-🟠 **Degraded** · refreshed 31 Jul 2026 20:03 UTC
+🟠 **Degraded** · refreshed 31 Jul 2026 20:04 UTC
 
 | Nodes | Pods | Containers |
 |:--:|:--:|:--:|
@@ -10,7 +10,7 @@
 
 | CPU | Memory | Storage |
 |---:|---:|---:|
-| 2.3% | 41.3% | 0.0 / 0.0 TB |
+| 2.3% | 41.2% | 0.0 / 0.0 TB |
 
 > Collector notices: `docker: docker unavailable or query failed: exit status 1` `kubernetes: kubectl unavailable or query failed: exit status 1` 
 
