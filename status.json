@@ -1,11 +1,26 @@
 {
-    "cluster": "Healthy",
-    "nodes": 6,
-    "pods": 42,
-    "containers": 58,
-    "cpu": 31,
-    "memory": 67,
-    "storage_used": 18.2,
-    "storage_total": 28,
-    "updated": ""
+  "cluster": "Degraded",
+  "nodes": 0,
+  "pods": 0,
+  "containers": 0,
+  "cpu": 0.6,
+  "memory": 43,
+  "storage_used": 0.000042323023080825806,
+  "storage_total": 0.000042323023080825806,
+  "updated": "2026-07-31T19:58:07.216153404Z",
+  "errors": [
+    "kubernetes: exit status 1",
+    "docker: exit status 1"
+  ],
+  "history": {
+    "cpu": [
+      0.6
+    ],
+    "memory": [
+      43
+    ],
+    "storage": [
+      100
+    ]
+  }
 }
