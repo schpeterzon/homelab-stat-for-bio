@@ -10,7 +10,7 @@
 
 | CPU | Memory | Storage |
 |---:|---:|---:|
-| 2.3% | 41.2% | 0.0 / 0.0 TB |
+| 2.0% | 41.1% | 0.0 / 0.0 TB |
 
 > Collector notices: `docker: docker unavailable or query failed: exit status 1` `kubernetes: kubectl unavailable or query failed: exit status 1` 
 
