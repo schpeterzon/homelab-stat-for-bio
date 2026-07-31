@@ -1,0 +1,11 @@
+{
+    "cluster": "Healthy",
+    "nodes": 6,
+    "pods": 42,
+    "containers": 58,
+    "cpu": 31,
+    "memory": 67,
+    "storage_used": 18.2,
+    "storage_total": 28,
+    "updated": ""
+}
