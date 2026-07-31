@@ -6,7 +6,7 @@
 |:--:|:--:|:--:|
 | {{.Kubernetes.Nodes}} | {{.Kubernetes.Pods}} | {{.Docker.Containers}} |
 
-<img src="assets/cpu.svg" alt="CPU usage" /> <img src="assets/ram.svg" alt="Memory usage" /> <img src="assets/storage.svg" alt="Storage usage" />
+<img src="assets/cpu-{{.AssetVersion}}.svg" alt="CPU usage" /> <img src="assets/ram-{{.AssetVersion}}.svg" alt="Memory usage" /> <img src="assets/storage-{{.AssetVersion}}.svg" alt="Storage usage" />
 
 | CPU | Memory | Storage |
 |---:|---:|---:|

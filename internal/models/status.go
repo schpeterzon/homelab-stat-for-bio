@@ -5,14 +5,15 @@ import "time"
 // Status is the portable snapshot committed to the profile repository.
 // Each source has its own section so it can later be exposed and cached independently.
 type Status struct {
-	Health     string           `json:"health"`
-	System     SystemStatus     `json:"system"`
-	Kubernetes KubernetesStatus `json:"kubernetes"`
-	Docker     DockerStatus     `json:"docker"`
-	Proxmox    ProxmoxStatus    `json:"proxmox"`
-	Updated    time.Time        `json:"updated"`
-	Errors     []string         `json:"errors,omitempty"`
-	History    History          `json:"history"`
+	Health       string           `json:"health"`
+	System       SystemStatus     `json:"system"`
+	Kubernetes   KubernetesStatus `json:"kubernetes"`
+	Docker       DockerStatus     `json:"docker"`
+	Proxmox      ProxmoxStatus    `json:"proxmox"`
+	Updated      time.Time        `json:"updated"`
+	AssetVersion string           `json:"asset_version"`
+	Errors       []string         `json:"errors,omitempty"`
+	History      History          `json:"history"`
 }
 
 type SystemStatus struct {

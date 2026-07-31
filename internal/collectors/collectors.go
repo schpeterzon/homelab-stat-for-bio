@@ -29,7 +29,7 @@ type Collector interface {
 
 func Collect(c config.Config) models.Status {
 	s := models.Status{Health: "Healthy", Updated: time.Now().UTC()}
-	registry := []Collector{HostCollector{}}
+	registry := []Collector{HostCollector{StorageTotalTB: c.Storage.TotalTB, StorageUsedPercent: c.Storage.UsedPercent}}
 	if c.Collectors.Kubernetes {
 		registry = append(registry, KubernetesCollector{})
 	}
@@ -64,16 +64,17 @@ func Collect(c config.Config) models.Status {
 		}
 		outcome.result.Apply(&s)
 	}
-	if len(s.Errors) > 0 {
-		s.Health = "Degraded"
-	}
+	// A missing optional source (for example kubectl on the Docker VM) is a
+	// collector notice, not a health failure. Health is reserved for freshness;
+	// the README keeps the notices visible for diagnosis.
+	s.Health = "Healthy"
 	return s
 }
 
-type HostCollector struct{}
+type HostCollector struct{ StorageTotalTB, StorageUsedPercent float64 }
 
 func (HostCollector) Name() string { return "host" }
-func (HostCollector) Collect() (models.Result, error) {
+func (h HostCollector) Collect() (models.Result, error) {
 	cpu, err := cpuPercent()
 	if err != nil {
 		return models.Result{}, err
@@ -85,6 +86,11 @@ func (HostCollector) Collect() (models.Result, error) {
 	storage, err := hostStorage()
 	if err != nil {
 		return models.Result{}, err
+	}
+	if h.StorageTotalTB > 0 {
+		storage.Total = h.StorageTotalTB
+		storage.Used = h.StorageTotalTB * h.StorageUsedPercent / 100
+		storage.Mountpoint = "configured"
 	}
 	hostname, _ := os.Hostname()
 	kernel, _ := command("uname", "-r")

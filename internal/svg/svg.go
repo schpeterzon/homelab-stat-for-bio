@@ -9,7 +9,7 @@ import (
 )
 
 // Write renders a self-contained status card for every metric history.
-func Write(dir string, cpu, memory, storage []float64) error {
+func Write(dir, version string, cpu, memory, storage []float64) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -17,7 +17,7 @@ func Write(dir string, cpu, memory, storage []float64) error {
 		name, label, color string
 		data               []float64
 	}{{"cpu", "CPU", "58a6ff", cpu}, {"ram", "Memory", "a371f7", memory}, {"storage", "Storage", "3fb950", storage}} {
-		if err := os.WriteFile(filepath.Join(dir, metric.name+".svg"), card(metric.label, metric.color, metric.data), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, metric.name+"-"+version+".svg"), card(metric.label, metric.color, metric.data), 0644); err != nil {
 			return err
 		}
 	}

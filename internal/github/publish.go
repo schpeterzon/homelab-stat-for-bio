@@ -9,9 +9,7 @@ import (
 
 func Publish(c config.Config) error {
 	generated := []string{c.README, c.StatusFile}
-	for _, name := range []string{"cpu.svg", "ram.svg", "storage.svg"} {
-		generated = append(generated, filepath.Join(c.AssetsDir, name))
-	}
+	generated = append(generated, filepath.Join(c.AssetsDir, "*.svg"))
 	cmd := exec.Command("git", append([]string{"add"}, generated...)...)
 	cmd.Dir = c.RepositoryPath
 	if err := cmd.Run(); err != nil {

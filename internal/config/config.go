@@ -26,6 +26,7 @@ type Config struct {
 		URL, TokenID, TokenSecret string
 		VerifyTLS                 bool
 	}
+	Storage struct{ TotalTB, UsedPercent float64 }
 }
 
 func Defaults() Config {
@@ -79,6 +80,8 @@ func Load(path string) (Config, error) {
 	c.Collectors.Proxmox = boolValue(values, "collectors.proxmox", c.Collectors.Proxmox)
 	c.Publish.Enabled = boolValue(values, "publish.enabled", c.Publish.Enabled)
 	c.Proxmox.VerifyTLS = boolValue(values, "proxmox.verify_tls", c.Proxmox.VerifyTLS)
+	c.Storage.TotalTB = floatValue(values, "storage.total_tb", c.Storage.TotalTB)
+	c.Storage.UsedPercent = floatValue(values, "storage.used_percent", c.Storage.UsedPercent)
 	return c, c.normalize(filepath.Dir(path))
 }
 
@@ -103,6 +106,15 @@ func boolValue(v map[string]string, key string, fallback bool) bool {
 		b, err := strconv.ParseBool(s)
 		if err == nil {
 			return b
+		}
+	}
+	return fallback
+}
+
+func floatValue(v map[string]string, key string, fallback float64) float64 {
+	if s, ok := v[key]; ok {
+		if n, err := strconv.ParseFloat(s, 64); err == nil {
+			return n
 		}
 	}
 	return fallback

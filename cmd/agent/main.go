@@ -12,6 +12,8 @@ import (
 	"github.com/schp/homelab-stat-for-bio/internal/svg"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
 )
 
 func main() {
@@ -21,15 +23,20 @@ func main() {
 	flag.Parse()
 	c, err := config.Load(*configPath)
 	fatal(err)
+	previous := readStatus(filepath.Join(c.RepositoryPath, c.StatusFile))
 	s := collectors.Collect(c)
-	s.History = appendHistory(readStatus(filepath.Join(c.RepositoryPath, c.StatusFile)), s)
+	if !previous.Updated.IsZero() && time.Since(previous.Updated) > 48*time.Hour {
+		s.Health = "Stale"
+	}
+	s.AssetVersion = strconv.FormatInt(s.Updated.Unix(), 10)
+	s.History = appendHistory(previous, s)
 	if *dryRun {
 		fatal(json.NewEncoder(os.Stdout).Encode(s))
 		return
 	}
 	fatal(os.MkdirAll(filepath.Join(c.RepositoryPath, c.AssetsDir), 0755))
 	fatal(writeJSON(filepath.Join(c.RepositoryPath, c.StatusFile), s))
-	fatal(svg.Write(filepath.Join(c.RepositoryPath, c.AssetsDir), s.History.CPU, s.History.Memory, s.History.Storage))
+	fatal(svg.Write(filepath.Join(c.RepositoryPath, c.AssetsDir), s.AssetVersion, s.History.CPU, s.History.Memory, s.History.Storage))
 	fatal(readme.Render(c.Template, filepath.Join(c.RepositoryPath, c.README), s))
 	if *publish || c.Publish.Enabled {
 		fatal(gh.Publish(c))
