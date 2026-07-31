@@ -1,0 +1,22 @@
+# This is deliberately a small YAML subset: nested maps, booleans, numbers, and strings.
+repository_path: .
+template: template.md
+readme: README.md
+status_file: status.json
+assets_dir: assets
+cluster_name: Homelab
+collectors:
+  kubernetes: true
+  docker: true
+  proxmox: false
+publish:
+  enabled: false
+  remote: origin
+  branch: main
+  message: "chore: update homelab status"
+proxmox:
+  url: https://proxmox.example.internal:8006
+  token_id: user@pam!profile-agent
+  # Prefer PROXMOX_TOKEN_SECRET over placing a secret here.
+  token_secret: ""
+  verify_tls: true

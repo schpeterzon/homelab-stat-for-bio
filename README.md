@@ -20,3 +20,40 @@
                        │
                        ▼
               GitHub Profile Repo Update
+
+
+homelab-agent/
+│
+├── cmd/
+│   └── agent/
+│       └── main.go
+│
+├── internal/
+│   ├── collectors/
+│   │      kubernetes.go
+│   │      docker.go
+│   │      system.go
+│   │      proxmox.go
+│   │      storage.go
+│   │
+│   ├── github/
+│   │      commit.go
+│   │
+│   ├── readme/
+│   │      template.go
+│   │
+│   ├── svg/
+│   │      cpu.go
+│   │      ram.go
+│   │      storage.go
+│   │
+│   └── models/
+│          status.go
+│
+├── templates/
+│      README.md.tmpl
+│
+├── output/
+│
+├── go.mod
+└── config.yaml
