@@ -25,8 +25,9 @@ type SystemStatus struct {
 }
 
 type Storage struct {
-	Used  float64 `json:"used_tb"`
-	Total float64 `json:"total_tb"`
+	Used       float64 `json:"used_tb"`
+	Total      float64 `json:"total_tb"`
+	Mountpoint string  `json:"mountpoint,omitempty"`
 }
 type KubernetesStatus struct {
 	Nodes int `json:"nodes"`

@@ -82,8 +82,8 @@ func (HostCollector) Collect() (models.Result, error) {
 	if err != nil {
 		return models.Result{}, err
 	}
-	var fs syscall.Statfs_t
-	if err := syscall.Statfs("/", &fs); err != nil {
+	storage, err := hostStorage()
+	if err != nil {
 		return models.Result{}, err
 	}
 	hostname, _ := os.Hostname()
@@ -92,9 +92,33 @@ func (HostCollector) Collect() (models.Result, error) {
 	if err != nil {
 		return models.Result{}, err
 	}
+	return models.Result{System: &models.SystemStatus{CPU: cpu, Memory: memory, Storage: storage, Hostname: hostname, Uptime: uptime, Kernel: kernel}}, nil
+}
+
+// hostStorage avoids reporting a tiny immutable overlay on bootc/OSTree hosts.
+// On conventional systems /var resolves to the root filesystem.
+func hostStorage() (models.Storage, error) {
+	root, err := statStorage("/")
+	if err != nil {
+		return models.Storage{}, err
+	}
+	if root.Total >= 1 {
+		return root, nil
+	}
+	if persistent, err := statStorage("/var"); err == nil && persistent.Total > root.Total {
+		return persistent, nil
+	}
+	return root, nil
+}
+
+func statStorage(path string) (models.Storage, error) {
+	var fs syscall.Statfs_t
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return models.Storage{}, err
+	}
 	total := float64(fs.Blocks) * float64(fs.Bsize) / (1 << 40)
 	available := float64(fs.Bavail) * float64(fs.Bsize) / (1 << 40)
-	return models.Result{System: &models.SystemStatus{CPU: cpu, Memory: memory, Storage: models.Storage{Used: total - available, Total: total}, Hostname: hostname, Uptime: uptime, Kernel: kernel}}, nil
+	return models.Storage{Used: total - available, Total: total, Mountpoint: path}, nil
 }
 
 type KubernetesCollector struct{}
