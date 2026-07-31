@@ -1,25 +1,47 @@
 {
-  "cluster": "Degraded",
-  "nodes": 0,
-  "pods": 0,
-  "containers": 0,
-  "cpu": 0.6,
-  "memory": 43,
-  "storage_used": 0.000042323023080825806,
-  "storage_total": 0.000042323023080825806,
-  "updated": "2026-07-31T19:58:07.216153404Z",
+  "health": "Degraded",
+  "system": {
+    "cpu": 2.3,
+    "memory": 41.3,
+    "storage": {
+      "used_tb": 0.000042323023080825806,
+      "total_tb": 0.000042323023080825806
+    },
+    "hostname": "neptune",
+    "uptime_seconds": 20167,
+    "kernel": "7.1.3-ogc5.1.fc44.x86_64"
+  },
+  "kubernetes": {
+    "nodes": 0,
+    "pods": 0
+  },
+  "docker": {
+    "containers": 0
+  },
+  "proxmox": {
+    "nodes": 0,
+    "memory": 0,
+    "storage": {
+      "used_tb": 0,
+      "total_tb": 0
+    }
+  },
+  "updated": "2026-07-31T20:03:52.116893954Z",
   "errors": [
-    "kubernetes: exit status 1",
-    "docker: exit status 1"
+    "docker: docker unavailable or query failed: exit status 1",
+    "kubernetes: kubectl unavailable or query failed: exit status 1"
   ],
   "history": {
     "cpu": [
-      0.6
+      0.6,
+      2.3
     ],
     "memory": [
-      43
+      43,
+      41.3
     ],
     "storage": [
+      100,
       100
     ]
   }

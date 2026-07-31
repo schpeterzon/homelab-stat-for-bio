@@ -1,6 +1,6 @@
 # homelab-agent
 
-A single Go binary that collects local and homelab health metrics, writes a GitHub-profile-ready README, generates local SVG sparklines, and can commit and push only when asked.
+A single Go binary that concurrently collects local and homelab health metrics, writes a GitHub-profile-ready README, generates local SVG sparklines, and can commit and push only when asked. Collector snapshots are isolated before the coordinator merges them, keeping each source reusable for a future API or dashboard.
 
 ## Quick start
 
@@ -11,7 +11,7 @@ A single Go binary that collects local and homelab health metrics, writes a GitH
 
 The binary uses the locally configured `kubectl` and `docker` CLIs, so it naturally observes the same cluster/context and Docker daemon as the host. Proxmox is optional; its API token secret should be supplied through `PROXMOX_TOKEN_SECRET` rather than committed configuration.
 
-Generated files are `README.md`, `status.json`, and `assets/{cpu,ram,storage}.svg`. Each run retains the latest 30 observations in `status.json` for the sparklines.
+Generated files are `README.md`, `status.json`, and `assets/{cpu,ram,storage}.svg`. The snapshot separates `system`, `kubernetes`, `docker`, and `proxmox` data; system metadata includes hostname, uptime, and kernel. Each run retains the latest 30 observations in `status.json` for sparklines, which show current, minimum, average, and maximum values.
 
 ## Automation
 

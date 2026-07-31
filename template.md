@@ -1,16 +1,16 @@
 # Homelab status
 
-{{if eq .Cluster "Healthy"}}🟢{{else}}🟠{{end}} **{{.Cluster}}** · refreshed {{.Updated.Format "02 Jan 2006 15:04 UTC"}}
+{{if eq .Health "Healthy"}}🟢{{else}}🟠{{end}} **{{.Health}}** · refreshed {{.Updated.Format "02 Jan 2006 15:04 UTC"}}
 
 | Nodes | Pods | Containers |
 |:--:|:--:|:--:|
-| {{.Nodes}} | {{.Pods}} | {{.Containers}} |
+| {{.Kubernetes.Nodes}} | {{.Kubernetes.Pods}} | {{.Docker.Containers}} |
 
 <img src="assets/cpu.svg" alt="CPU usage" /> <img src="assets/ram.svg" alt="Memory usage" /> <img src="assets/storage.svg" alt="Storage usage" />
 
 | CPU | Memory | Storage |
 |---:|---:|---:|
-| {{percent .CPU}}% | {{percent .Memory}}% | {{printf "%.1f" .StorageUsed}} / {{printf "%.1f" .StorageTotal}} TB |
+| {{percent .System.CPU}}% | {{percent .System.Memory}}% | {{printf "%.1f" .System.Storage.Used}} / {{printf "%.1f" .System.Storage.Total}} TB |
 
 {{if .Errors}}> Collector notices: {{range .Errors}}`{{.}}` {{end}}{{end}}
 
