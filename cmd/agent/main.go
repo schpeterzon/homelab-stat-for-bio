@@ -23,6 +23,9 @@ func main() {
 	flag.Parse()
 	c, err := config.Load(*configPath)
 	fatal(err)
+	if !*dryRun && (*publish || c.Publish.Enabled) {
+		fatal(gh.Sync(c))
+	}
 	previous := readStatus(filepath.Join(c.RepositoryPath, c.StatusFile))
 	s := collectors.Collect(c)
 	if !previous.Updated.IsZero() && time.Since(previous.Updated) > 48*time.Hour {

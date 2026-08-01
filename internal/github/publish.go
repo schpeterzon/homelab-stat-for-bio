@@ -7,6 +7,17 @@ import (
 	"path/filepath"
 )
 
+// Sync fast-forwards the target checkout before generated files are written.
+// This lets a profile README be edited on GitHub between scheduled runs.
+func Sync(c config.Config) error {
+	cmd := exec.Command("git", "pull", "--ff-only", c.Publish.Remote, c.Publish.Branch)
+	cmd.Dir = c.RepositoryPath
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("git pull --ff-only %s %s: %w: %s", c.Publish.Remote, c.Publish.Branch, err, out)
+	}
+	return nil
+}
+
 func Publish(c config.Config) error {
 	generated := []string{c.README, c.StatusFile}
 	generated = append(generated, filepath.Join(c.AssetsDir, "*.svg"))
