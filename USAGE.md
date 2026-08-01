@@ -19,7 +19,7 @@ Build with `go build -o homelab-agent ./cmd/agent`, then schedule `homelab-agent
 
 ## GitHub profile publishing
 
-`config.profile.yaml` targets the adjacent `../schpeterzon` profile repository and writes its README, `status.json`, and root-level `cpu.svg`, `ram.svg`, and `storage.svg`. Build the binary, install the supplied user units, and enable the daily timer:
+`config.profile.yaml` targets the adjacent `../schpeterzon` profile repository and writes its README, `status.json`, and root-level `cpu.svg`, `ram.svg`, and `storage.svg`. For the supplied `/opt` systemd deployment, use `deploy/server/config.yaml`; it expects the profile repository at `/opt/schpeterzon`. Build the binary, install the supplied user units, and enable the four-hour timer:
 
 ```bash
 go build -o homelab-agent ./cmd/agent

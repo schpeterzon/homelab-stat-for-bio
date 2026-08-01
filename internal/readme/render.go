@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/schp/homelab-stat-for-bio/internal/models"
+	"github.com/schpeterzon/homelab-stat-for-bio/internal/models"
 )
 
 func Render(templatePath, outputPath string, status models.Status) error {

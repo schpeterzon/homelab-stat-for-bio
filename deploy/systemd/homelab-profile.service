@@ -4,4 +4,4 @@ Description=Update schpeterzon homelab GitHub profile
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/homelab-stat-for-bio
-ExecStart=/opt/homelab-stat-for-bio/homelab-agent --config /opt/homelab-stat-for-bio/config.yaml --publish
+ExecStart=/opt/homelab-stat-for-bio/homelab-agent --config /opt/homelab-stat-for-bio/deploy/server/config.yaml --publish

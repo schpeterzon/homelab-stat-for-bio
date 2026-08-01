@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/schp/homelab-stat-for-bio/internal/config"
-	"github.com/schp/homelab-stat-for-bio/internal/models"
+	"github.com/schpeterzon/homelab-stat-for-bio/internal/config"
+	"github.com/schpeterzon/homelab-stat-for-bio/internal/models"
 )
 
 // Collector can be registered without changing the collection coordinator.

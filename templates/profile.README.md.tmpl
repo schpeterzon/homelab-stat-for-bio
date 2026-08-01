@@ -35,7 +35,7 @@ Python • Kubernetes • Proxmox VE • Linux
 |:--:|:--:|:--:|
 | {{.Kubernetes.Nodes}} | {{.Kubernetes.Pods}} | {{.Docker.Containers}} |
 
-<img src="cpu-{{.AssetVersion}}.svg" alt="CPU usage" /> <img src="ram-{{.AssetVersion}}.svg" alt="Memory usage" /> <img src="storage-{{.AssetVersion}}.svg" alt="Storage usage" />
+<img src="cpu.svg" alt="CPU usage" /> <img src="ram.svg" alt="Memory usage" /> <img src="storage.svg" alt="Storage usage" />
 
 | CPU | Memory | Storage |
 |---:|---:|---:|
@@ -43,4 +43,4 @@ Python • Kubernetes • Proxmox VE • Linux
 
 {{if .Errors}}> Collector notices: {{range .Errors}}`{{.}}` {{end}}{{end}}
 
-_Generated daily by [homelab-stat-for-bio](https://github.com/schp/homelab-stat-for-bio)._
+_Generated every four hours by [homelab-stat-for-bio](https://github.com/schpeterzon/homelab-stat-for-bio)._

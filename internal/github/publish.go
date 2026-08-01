@@ -2,7 +2,7 @@ package github
 
 import (
 	"fmt"
-	"github.com/schp/homelab-stat-for-bio/internal/config"
+	"github.com/schpeterzon/homelab-stat-for-bio/internal/config"
 	"os/exec"
 	"path/filepath"
 )

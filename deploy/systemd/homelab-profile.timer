@@ -1,5 +1,5 @@
 [Unit]
-Description=Run the homelab profile updater every day
+Description=Run the homelab profile updater every four hours
 
 [Timer]
 OnCalendar=*-*-* 00,04,08,12,16,20:00:00
