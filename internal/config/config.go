@@ -17,6 +17,9 @@ type Config struct {
 	StatusFile     string
 	AssetsDir      string
 	ClusterName    string
+	Profile        string
+	HistoryPoints  int
+	IntervalHours  float64
 	Collectors     struct{ Kubernetes, Docker, Proxmox bool }
 	Publish        struct {
 		Enabled                 bool
@@ -27,14 +30,22 @@ type Config struct {
 		VerifyTLS                 bool
 	}
 	Storage struct{ TotalTB, UsedPercent float64 }
+	// Docker endpoints: "local" or "ssh:user@host". Comma separated in YAML.
+	DockerHosts []string
+	Kubeconfig  string
+	// MetricsSource picks the headline CPU/memory/storage: "auto" uses the
+	// Proxmox cluster when it reports, otherwise the local host.
+	MetricsSource string
 }
 
 func Defaults() Config {
 	var c Config
-	c.RepositoryPath, c.Template, c.README, c.StatusFile, c.AssetsDir, c.ClusterName = ".", "template.md", "README.md", "status.json", "assets", "Homelab"
+	c.RepositoryPath, c.Template, c.README, c.StatusFile, c.AssetsDir, c.ClusterName = ".", "templates/profile.README.md.tmpl", "README.md", "status.json", "assets", "Homelab"
+	c.Profile, c.HistoryPoints, c.IntervalHours = "profile.json", 42, 4
 	c.Collectors.Kubernetes, c.Collectors.Docker = true, true
 	c.Publish.Remote, c.Publish.Branch, c.Publish.Message = "origin", "main", "chore: update homelab status"
 	c.Proxmox.VerifyTLS = true
+	c.DockerHosts, c.MetricsSource = []string{"local"}, "auto"
 	return c
 }
 
@@ -69,12 +80,25 @@ func Load(path string) (Config, error) {
 	set("status_file", &c.StatusFile)
 	set("assets_dir", &c.AssetsDir)
 	set("cluster_name", &c.ClusterName)
+	set("profile", &c.Profile)
+	c.HistoryPoints = int(floatValue(values, "history_points", float64(c.HistoryPoints)))
+	c.IntervalHours = floatValue(values, "interval_hours", c.IntervalHours)
 	set("publish.remote", &c.Publish.Remote)
 	set("publish.branch", &c.Publish.Branch)
 	set("publish.message", &c.Publish.Message)
 	set("proxmox.url", &c.Proxmox.URL)
 	set("proxmox.token_id", &c.Proxmox.TokenID)
 	set("proxmox.token_secret", &c.Proxmox.TokenSecret)
+	set("kubernetes.kubeconfig", &c.Kubeconfig)
+	set("metrics_source", &c.MetricsSource)
+	if v, ok := values["docker.hosts"]; ok {
+		c.DockerHosts = nil
+		for _, h := range strings.Split(v, ",") {
+			if h = strings.TrimSpace(h); h != "" {
+				c.DockerHosts = append(c.DockerHosts, h)
+			}
+		}
+	}
 	c.Collectors.Kubernetes = boolValue(values, "collectors.kubernetes", c.Collectors.Kubernetes)
 	c.Collectors.Docker = boolValue(values, "collectors.docker", c.Collectors.Docker)
 	c.Collectors.Proxmox = boolValue(values, "collectors.proxmox", c.Collectors.Proxmox)
@@ -97,6 +121,15 @@ func (c *Config) normalize(base string) error {
 	}
 	if !filepath.IsAbs(c.Template) {
 		c.Template = filepath.Join(base, c.Template)
+	}
+	if !filepath.IsAbs(c.Profile) {
+		c.Profile = filepath.Join(base, c.Profile)
+	}
+	if c.HistoryPoints < 2 {
+		c.HistoryPoints = 42
+	}
+	if c.IntervalHours <= 0 {
+		c.IntervalHours = 4
 	}
 	return nil
 }

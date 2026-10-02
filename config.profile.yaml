@@ -1,10 +1,11 @@
 # Output target for the schpeterzon GitHub profile repository.
 repository_path: ../schpeterzon
 template: templates/profile.README.md.tmpl
+profile: profile.json
 readme: README.md
 status_file: status.json
-# SVGs deliberately live at the profile repository root for simple GitHub README links.
-assets_dir: .
+# Theme-aware cards are written as assets/<card>-{dark,light}.svg.
+assets_dir: assets
 collectors:
   kubernetes: true
   docker: true
