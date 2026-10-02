@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,13 +29,13 @@ type Collector interface {
 }
 
 func Collect(c config.Config) models.Status {
-	s := models.Status{Health: "Healthy", Updated: time.Now().UTC()}
+	s := models.Status{Updated: time.Now().UTC()}
 	registry := []Collector{HostCollector{StorageTotalTB: c.Storage.TotalTB, StorageUsedPercent: c.Storage.UsedPercent}}
 	if c.Collectors.Kubernetes {
-		registry = append(registry, KubernetesCollector{})
+		registry = append(registry, KubernetesCollector{Kubeconfig: c.Kubeconfig})
 	}
 	if c.Collectors.Docker {
-		registry = append(registry, DockerCollector{})
+		registry = append(registry, DockerCollector{Hosts: c.DockerHosts})
 	}
 	if c.Collectors.Proxmox {
 		registry = append(registry, ProxmoxCollector{Config: c})
@@ -58,16 +59,21 @@ func Collect(c config.Config) models.Status {
 	wg.Wait()
 	close(results)
 	for outcome := range results {
+		// A collector may return partial data with an error, e.g. one of
+		// several Docker endpoints unreachable; keep both.
 		if outcome.err != nil {
 			s.Errors = append(s.Errors, outcome.name+": "+outcome.err.Error())
-			continue
 		}
 		outcome.result.Apply(&s)
 	}
-	// A missing optional source (for example kubectl on the Docker VM) is a
-	// collector notice, not a health failure. Health is reserved for freshness;
-	// the README keeps the notices visible for diagnosis.
-	s.Health = "Healthy"
+	headline(&s, c)
+	// Every enabled collector is expected to report. A failure is shown as
+	// Degraded rather than hidden: disable collectors this host cannot reach.
+	s.Health = "Operational"
+	if len(s.Errors) > 0 {
+		s.Health = "Degraded"
+	}
+	sort.Strings(s.Errors)
 	return s
 }
 
@@ -127,30 +133,124 @@ func statStorage(path string) (models.Storage, error) {
 	return models.Storage{Used: total - available, Total: total, Mountpoint: path}, nil
 }
 
-type KubernetesCollector struct{}
+type KubernetesCollector struct{ Kubeconfig string }
 
 func (KubernetesCollector) Name() string { return "kubernetes" }
-func (KubernetesCollector) Collect() (models.Result, error) {
-	nodes, err := command("kubectl", "get", "nodes", "--no-headers")
-	if err != nil {
-		return models.Result{}, fmt.Errorf("kubectl unavailable or query failed: %w", err)
+func (k KubernetesCollector) Collect() (models.Result, error) {
+	kubectl := func(args ...string) (string, error) {
+		if k.Kubeconfig != "" {
+			args = append([]string{"--kubeconfig", k.Kubeconfig}, args...)
+		}
+		return command("kubectl", append(args, "--request-timeout=10s")...)
 	}
-	pods, err := command("kubectl", "get", "pods", "-A", "--no-headers")
+	var nodes, pods struct {
+		Items []struct {
+			Status struct {
+				Phase      string                          `json:"phase"`
+				Conditions []struct{ Type, Status string } `json:"conditions"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+	out, err := kubectl("get", "nodes", "-o", "json")
+	if err != nil {
+		return models.Result{}, fmt.Errorf("node query failed: %w", err)
+	}
+	if err := json.Unmarshal([]byte(out), &nodes); err != nil {
+		return models.Result{}, err
+	}
+	out, err = kubectl("get", "pods", "-A", "-o", "json")
 	if err != nil {
 		return models.Result{}, fmt.Errorf("pod query failed: %w", err)
 	}
-	return models.Result{Kubernetes: &models.KubernetesStatus{Nodes: lines(nodes), Pods: lines(pods)}}, nil
+	if err := json.Unmarshal([]byte(out), &pods); err != nil {
+		return models.Result{}, err
+	}
+	st := models.KubernetesStatus{Nodes: len(nodes.Items), Pods: len(pods.Items)}
+	for _, n := range nodes.Items {
+		for _, c := range n.Status.Conditions {
+			if c.Type == "Ready" && c.Status == "True" {
+				st.Ready++
+			}
+		}
+	}
+	for _, p := range pods.Items {
+		if p.Status.Phase == "Running" {
+			st.Running++
+		}
+	}
+	if out, err := kubectl("get", "deployments", "-A", "--no-headers"); err == nil {
+		st.Deployments = lines(out)
+	}
+	// Usage needs metrics-server (bundled with k3s); absence is not an error.
+	if out, err := kubectl("top", "nodes", "--no-headers"); err == nil {
+		st.CPU, st.Memory = topAverages(out)
+	}
+	return models.Result{Kubernetes: &st}, nil
 }
 
-type DockerCollector struct{}
+// topAverages averages the CPU% and MEMORY% columns of `kubectl top nodes`.
+func topAverages(out string) (cpu, mem float64) {
+	n := 0.0
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		f := strings.Fields(line)
+		if len(f) < 5 {
+			continue
+		}
+		c, err1 := strconv.ParseFloat(strings.TrimSuffix(f[2], "%"), 64)
+		m, err2 := strconv.ParseFloat(strings.TrimSuffix(f[4], "%"), 64)
+		if err1 != nil || err2 != nil {
+			continue
+		}
+		cpu, mem, n = cpu+c, mem+m, n+1
+	}
+	if n == 0 {
+		return 0, 0
+	}
+	return round(cpu / n), round(mem / n)
+}
+
+// DockerCollector counts running containers on every endpoint. "local" uses
+// the local daemon; "ssh:user@host" runs `docker ps -q` over SSH, which pairs
+// with a forced command in the remote authorized_keys (see README).
+type DockerCollector struct{ Hosts []string }
 
 func (DockerCollector) Name() string { return "docker" }
-func (DockerCollector) Collect() (models.Result, error) {
-	out, err := command("docker", "ps", "-q")
-	if err != nil {
-		return models.Result{}, fmt.Errorf("docker unavailable or query failed: %w", err)
+func (d DockerCollector) Collect() (models.Result, error) {
+	hosts := d.Hosts
+	if len(hosts) == 0 {
+		hosts = []string{"local"}
 	}
-	return models.Result{Docker: &models.DockerStatus{Containers: lines(out)}}, nil
+	var st models.DockerStatus
+	var failed []string
+	for _, h := range hosts {
+		var out string
+		var err error
+		name := h
+		if target, ok := strings.CutPrefix(h, "ssh:"); ok {
+			name = target
+			if i := strings.LastIndex(target, "@"); i >= 0 {
+				name = target[i+1:]
+			}
+			out, err = command("ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", target, "docker", "ps", "-q")
+		} else {
+			name, _ = os.Hostname()
+			out, err = command("docker", "ps", "-q")
+		}
+		if err != nil {
+			failed = append(failed, fmt.Sprintf("%s: %v", h, err))
+			continue
+		}
+		st.Hosts = append(st.Hosts, models.DockerHost{Name: name, Containers: lines(out)})
+		st.Containers += lines(out)
+	}
+	var err error
+	if len(failed) > 0 {
+		err = fmt.Errorf("unreachable endpoints: %s", strings.Join(failed, "; "))
+	}
+	if len(st.Hosts) == 0 {
+		return models.Result{}, err
+	}
+	return models.Result{Docker: &st}, err
 }
 
 type ProxmoxCollector struct{ Config config.Config }
@@ -176,32 +276,109 @@ func (p ProxmoxCollector) Collect() (models.Result, error) {
 		return models.Result{}, fmt.Errorf("API returned %s", resp.Status)
 	}
 	var payload struct {
-		Data []struct {
-			Type    string  `json:"type"`
-			MaxMem  float64 `json:"maxmem"`
-			Mem     float64 `json:"mem"`
-			MaxDisk float64 `json:"maxdisk"`
-			Disk    float64 `json:"disk"`
-		} `json:"data"`
+		Data []resource `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return models.Result{}, err
 	}
+	out := aggregate(payload.Data)
+	return models.Result{Proxmox: &out}, nil
+}
+
+// resource is one entry of /api2/json/cluster/resources.
+type resource struct {
+	Type     string  `json:"type"`
+	Node     string  `json:"node"`
+	Status   string  `json:"status"`
+	Storage  string  `json:"storage"`
+	Shared   int     `json:"shared"`
+	Template int     `json:"template"`
+	CPU      float64 `json:"cpu"`
+	MaxCPU   float64 `json:"maxcpu"`
+	Mem      float64 `json:"mem"`
+	MaxMem   float64 `json:"maxmem"`
+	Disk     float64 `json:"disk"`
+	MaxDisk  float64 `json:"maxdisk"`
+	Uptime   int64   `json:"uptime"`
+}
+
+func aggregate(data []resource) models.ProxmoxStatus {
 	var out models.ProxmoxStatus
-	var maxMem float64
-	for _, r := range payload.Data {
+	var cpuWeighted, mem, maxMem float64
+	hosts := map[string]*models.ProxmoxNode{}
+	seenShared := map[string]bool{}
+	for _, r := range data {
 		if r.Type == "node" {
 			out.Nodes++
-			maxMem += r.MaxMem
-			out.Memory += r.Mem
+			n := &models.ProxmoxNode{Name: r.Node, Online: r.Status == "online", Uptime: r.Uptime}
+			if n.Online {
+				out.Online++
+				out.Cores += int(r.MaxCPU)
+				cpuWeighted += r.CPU * r.MaxCPU
+				mem, maxMem = mem+r.Mem, maxMem+r.MaxMem
+				n.CPU = round(r.CPU * 100)
+				if r.MaxMem > 0 {
+					n.Memory = round(r.Mem / r.MaxMem * 100)
+				}
+			}
+			hosts[r.Node] = n
+		}
+	}
+	for _, r := range data {
+		switch r.Type {
+		case "qemu", "lxc":
+			if r.Template == 1 {
+				continue
+			}
+			out.Guests++
+			if r.Status == "running" {
+				out.Running++
+				if n := hosts[r.Node]; n != nil {
+					n.Guests++
+				}
+			}
+		case "storage":
+			if r.Status != "available" || r.MaxDisk == 0 {
+				continue
+			}
+			if r.Shared == 1 {
+				if seenShared[r.Storage] {
+					continue
+				}
+				seenShared[r.Storage] = true
+			}
 			out.Storage.Total += r.MaxDisk / (1 << 40)
 			out.Storage.Used += r.Disk / (1 << 40)
 		}
 	}
-	if maxMem > 0 {
-		out.Memory = round(out.Memory / maxMem * 100)
+	if out.Cores > 0 {
+		out.CPU = round(cpuWeighted / float64(out.Cores) * 100)
 	}
-	return models.Result{Proxmox: &out}, nil
+	if maxMem > 0 {
+		out.Memory = round(mem / maxMem * 100)
+		out.MemTB = maxMem / (1 << 40)
+	}
+	out.Storage.Used, out.Storage.Total = math.Round(out.Storage.Used*100)/100, math.Round(out.Storage.Total*100)/100
+	for _, n := range hosts {
+		out.Hosts = append(out.Hosts, *n)
+	}
+	sort.Slice(out.Hosts, func(i, j int) bool { return out.Hosts[i].Name < out.Hosts[j].Name })
+	return out
+}
+
+// headline promotes cluster-wide Proxmox figures to the headline metrics so
+// the cards describe the whole lab, not the VM the agent happens to run on.
+func headline(s *models.Status, c config.Config) {
+	s.Scope = "host"
+	if c.MetricsSource == "host" || s.Proxmox.Online == 0 {
+		return
+	}
+	s.Scope = "cluster"
+	s.System.CPU, s.System.Memory = s.Proxmox.CPU, s.Proxmox.Memory
+	if c.Storage.TotalTB == 0 && s.Proxmox.Storage.Total > 0 {
+		s.System.Storage = s.Proxmox.Storage
+		s.System.Storage.Mountpoint = "proxmox"
+	}
 }
 
 func command(name string, args ...string) (string, error) {

@@ -6,6 +6,7 @@ import "time"
 // Each source has its own section so it can later be exposed and cached independently.
 type Status struct {
 	Health       string           `json:"health"`
+	Scope        string           `json:"scope"` // "cluster" or "host": what the headline metrics describe
 	System       SystemStatus     `json:"system"`
 	Kubernetes   KubernetesStatus `json:"kubernetes"`
 	Docker       DockerStatus     `json:"docker"`
@@ -31,21 +32,55 @@ type Storage struct {
 	Mountpoint string  `json:"mountpoint,omitempty"`
 }
 type KubernetesStatus struct {
-	Nodes int `json:"nodes"`
-	Pods  int `json:"pods"`
+	Nodes       int     `json:"nodes"`
+	Ready       int     `json:"ready"`
+	Pods        int     `json:"pods"`
+	Running     int     `json:"running"`
+	Deployments int     `json:"deployments"`
+	CPU         float64 `json:"cpu,omitempty"`    // cluster CPU %, from metrics-server
+	Memory      float64 `json:"memory,omitempty"` // cluster memory %, from metrics-server
 }
+
+// DockerStatus aggregates every configured Docker endpoint.
 type DockerStatus struct {
-	Containers int `json:"containers"`
+	Containers int          `json:"containers"`
+	Hosts      []DockerHost `json:"hosts,omitempty"`
 }
+type DockerHost struct {
+	Name       string `json:"name"`
+	Containers int    `json:"containers"`
+}
+
+// ProxmoxStatus is cluster-wide: CPU and memory are weighted across online
+// nodes, storage counts each shared pool once.
 type ProxmoxStatus struct {
-	Nodes   int     `json:"nodes"`
-	Memory  float64 `json:"memory"`
-	Storage Storage `json:"storage"`
+	Nodes   int           `json:"nodes"`
+	Online  int           `json:"online"`
+	Guests  int           `json:"guests"`
+	Running int           `json:"running"`
+	CPU     float64       `json:"cpu"`
+	Cores   int           `json:"cores"`
+	Memory  float64       `json:"memory"`
+	MemTB   float64       `json:"memory_total_tb"`
+	Storage Storage       `json:"storage"`
+	Hosts   []ProxmoxNode `json:"hosts,omitempty"`
 }
+type ProxmoxNode struct {
+	Name   string  `json:"name"`
+	Online bool    `json:"online"`
+	CPU    float64 `json:"cpu"`
+	Memory float64 `json:"memory"`
+	Guests int     `json:"guests"`
+	Uptime int64   `json:"uptime_seconds"`
+}
+
+// History holds parallel series. Time was added after the first releases, so
+// older snapshots may carry values without timestamps; see main.alignTimes.
 type History struct {
-	CPU     []float64 `json:"cpu"`
-	Memory  []float64 `json:"memory"`
-	Storage []float64 `json:"storage"`
+	Time    []time.Time `json:"time,omitempty"`
+	CPU     []float64   `json:"cpu"`
+	Memory  []float64   `json:"memory"`
+	Storage []float64   `json:"storage"`
 }
 
 // Result is an isolated collector result. Applying it is deliberately centralised,

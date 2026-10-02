@@ -19,9 +19,13 @@ func Sync(c config.Config) error {
 }
 
 func Publish(c config.Config) error {
-	generated := []string{c.README, c.StatusFile}
-	generated = append(generated, filepath.Join(c.AssetsDir, "*.svg"))
-	cmd := exec.Command("git", append([]string{"add"}, generated...)...)
+	// -A also stages deletions, so cards removed from the renderer disappear
+	// from the profile repository instead of lingering.
+	assets := filepath.Join(c.AssetsDir, "*.svg")
+	if filepath.Clean(c.AssetsDir) != "." {
+		assets = c.AssetsDir
+	}
+	cmd := exec.Command("git", "add", "-A", "--", c.README, c.StatusFile, assets)
 	cmd.Dir = c.RepositoryPath
 	if err := cmd.Run(); err != nil {
 		return err

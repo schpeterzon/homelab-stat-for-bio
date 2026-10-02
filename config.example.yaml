@@ -1,6 +1,10 @@
 # This is deliberately a small YAML subset: nested maps, booleans, numbers, and strings.
 repository_path: .
-template: template.md
+template: templates/profile.README.md.tmpl
+profile: profile.json
+# Samples kept for sparklines and the seven-day load map (6 per day at a 4 h interval).
+history_points: 42
+interval_hours: 4
 readme: README.md
 status_file: status.json
 assets_dir: assets
@@ -20,3 +24,10 @@ proxmox:
   # Prefer PROXMOX_TOKEN_SECRET over placing a secret here.
   token_secret: ""
   verify_tls: true
+# auto: cluster-wide headline metrics when Proxmox reports, else this host.
+metrics_source: auto
+docker:
+  # "local" and/or "ssh:user@host", comma separated.
+  hosts: "local"
+kubernetes:
+  kubeconfig: ""

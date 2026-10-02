@@ -1,0 +1,193 @@
+{
+  "name": "SATYI",
+  "kicker": "Homelab / Infrastructure",
+  "tagline": "Python  /  Kubernetes  /  Proxmox VE  /  Linux",
+  "stack": [
+    {
+      "label": "Compute",
+      "items": [
+        "Proxmox VE",
+        "Debian",
+        "Bazzite",
+        "QEMU / KVM",
+        "LXC"
+      ]
+    },
+    {
+      "label": "Orchestration",
+      "items": [
+        "Kubernetes (k3s)",
+        "Docker",
+        "Longhorn",
+        "Traefik",
+        "Portainer"
+      ]
+    },
+    {
+      "label": "Languages",
+      "items": [
+        "Python",
+        "Go",
+        "TypeScript",
+        "React",
+        "Bash"
+      ]
+    }
+  ],
+  "topology": {
+    "edge": [
+      {
+        "id": "internet",
+        "label": "Internet",
+        "detail": "Public clients"
+      },
+      {
+        "id": "cloudflare",
+        "label": "Cloudflare",
+        "detail": "DNS / tunnels"
+      }
+    ],
+    "hosts": [
+      {
+        "id": "rackintosh",
+        "label": "rackintosh",
+        "detail": "Dell R620",
+        "specs": "32 cores / 125 GB",
+        "telemetry": "proxmox"
+      },
+      {
+        "id": "silicium",
+        "label": "silicium",
+        "detail": "Xeon E3-1220 v2",
+        "specs": "4 cores / 9 GB",
+        "telemetry": "proxmox"
+      },
+      {
+        "id": "forest",
+        "label": "forest",
+        "detail": "Storage node",
+        "specs": "24 cores / 62 GB",
+        "telemetry": "proxmox"
+      }
+    ],
+    "platforms": [
+      {
+        "id": "docker",
+        "label": "Docker",
+        "detail": "docker VM / docker-ct",
+        "items": [
+          "cloudflared",
+          "watchtower"
+        ],
+        "telemetry": "docker"
+      },
+      {
+        "id": "k3s",
+        "label": "K3s cluster",
+        "detail": "venus / mercury / mars",
+        "items": [
+          "Longhorn CSI",
+          "Traefik ingress"
+        ],
+        "telemetry": "kubernetes"
+      }
+    ],
+    "workloads": [
+      {
+        "id": "media",
+        "label": "Media",
+        "items": [
+          "Jellyfin",
+          "Immich",
+          "Navidrome",
+          "Sonarr",
+          "Radarr",
+          "Lidarr"
+        ]
+      },
+      {
+        "id": "cloud",
+        "label": "Cloud & productivity",
+        "items": [
+          "Nextcloud",
+          "Collabora",
+          "Vaultwarden",
+          "Vikunja",
+          "Grist"
+        ]
+      },
+      {
+        "id": "network",
+        "label": "Network & access",
+        "items": [
+          "Pi-hole",
+          "WireGuard",
+          "OpenVPN",
+          "Uptime Kuma"
+        ]
+      },
+      {
+        "id": "platform",
+        "label": "Platform",
+        "items": [
+          "Registry",
+          "Headlamp",
+          "Homepage",
+          "Homelab Map"
+        ]
+      }
+    ],
+    "links": [
+      {
+        "from": "internet",
+        "to": "cloudflare"
+      },
+      {
+        "from": "cloudflare",
+        "to": "docker",
+        "kind": "tunnel",
+        "label": "2 tunnels"
+      },
+      {
+        "from": "rackintosh",
+        "to": "docker"
+      },
+      {
+        "from": "forest",
+        "to": "docker"
+      },
+      {
+        "from": "rackintosh",
+        "to": "k3s"
+      },
+      {
+        "from": "silicium",
+        "to": "k3s"
+      },
+      {
+        "from": "forest",
+        "to": "k3s"
+      },
+      {
+        "from": "docker",
+        "to": "media"
+      },
+      {
+        "from": "docker",
+        "to": "cloud"
+      },
+      {
+        "from": "docker",
+        "to": "network"
+      },
+      {
+        "from": "k3s",
+        "to": "network"
+      },
+      {
+        "from": "k3s",
+        "to": "platform"
+      }
+    ]
+  }
+}
